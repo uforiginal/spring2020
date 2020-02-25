@@ -10,6 +10,7 @@ from Camera import Camera
 from Color import Color
 from DirectionalLight import DirectionalLight
 from Light import Light
+from Material import Material
 from OrthographicCamera import OrthographicCamera
 from PerspectiveCamera import PerspectiveCamera
 from PointLight import PointLight
@@ -32,6 +33,35 @@ print("Starting our ray tracer")
 
 
 frame = Frame(256, 256)
+
+cameraOrigin = Point3D(0,0,1)
+origin = Point3D(0,0,0)
+cameraLookAt = origin
+cameraUp = Point3D(0,1,0)
+camreaBackgroundColor = Color(0,0,0)
+
+camera = Camera(cameraOrigin, cameraLookAt, cameraUp, camreaBackgroundColor)
+
+lightDirection = Point3D(0,-1,0)
+lightColor = Color(255,255,255)
+
+light = DirectionalLight(lightColor, 1, lightDirection)
+
+sphereCenter = origin
+sphereRadius = 1
+sphereMaterialColor = Color(255, 0, 0)
+sphereMaterialSpecularColor = Color(255,255,255)
+sphereMaterialSpecularStrength = 1
+
+sphereMaterial = Material(sphereMaterialColor, sphereMaterialSpecularColor, sphereMaterialSpecularStrength)
+
+sphere = Sphere(sphereMaterial, sphereCenter, sphereRadius)
+
+lights = [light]
+objects = [sphere]
+
+
+
     
 
 
