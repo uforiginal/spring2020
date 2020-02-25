@@ -3,6 +3,19 @@ import png
 import math
 
 from Frame import Frame
+from Ray import Ray
+from Point3D import Point3D
+from AreaLight import AreaLight
+from Camera import Camera
+from Color import Color
+from DirectionalLight import DirectionalLight
+from Light import Light
+from OrthographicCamera import OrthographicCamera
+from PerspectiveCamera import PerspectiveCamera
+from PointLight import PointLight
+from SceneObject import SceneObject
+from Sphere import Sphere
+from SpotLight import SpotLight
 
 
 
