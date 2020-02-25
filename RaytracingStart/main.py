@@ -23,6 +23,14 @@ from SpotLight import SpotLight
 
 print("Starting our ray tracer")
 
+
+# Minimum for a ray tracer
+# A frame to render to
+# A camera
+# A light
+# An object to render
+
+
 frame = Frame(256, 256)
     
 
