@@ -60,6 +60,18 @@ sphere = Sphere(sphereMaterial, sphereCenter, sphereRadius)
 lights = [light]
 objects = [sphere]
 
+#Now loop over every pixel in our frame
+
+#For every pixel
+#Figure out where in camera space that pixel is
+#Then figure out where in world space that pixel is
+#Then shoot a ray from the world space origin of the camera to that world space location
+#Then loop over each object in the scene
+#For ever object that ray collides with
+#Find out which one has the closest collission
+#That's our hit
+#If we don't have a hit, return the background color
+#Then calculate the color based on the direction to the right
 
 
     
