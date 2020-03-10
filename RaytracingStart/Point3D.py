@@ -15,4 +15,5 @@ class Point3D:
         x = self.x * point.x
         y = self.y * point.y
         z = self.z * point.z
-        return x+y+z
+        return x + y + z
+    

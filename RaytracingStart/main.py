@@ -9,7 +9,70 @@ from Frame import Frame
 
 print("Starting our ray tracer")
 
-frame = Frame(256, 256)#what we render to
+frame = Frame(256, 256)
+
+
+
+
+for y in range(256):
+    for x in range(256):
+        #Pattern to move between reference spaces
+        #1. Divide by maximum value
+        #2. Subract by .5 so I'm centered about 0
+        #3. Multiply by the biggest number * 2 in the new space
+        cameraX = x/255 #1.
+        cameraX = cameraX -.5 #2.
+        cameraX = cameraX * 2 #3.
+
+        cameraY = y/255
+        cameraY = cameraY - .5
+        cameraY = cameraY * 2
+        cameraY = cameraY * -1 #Account for flipped Y
+
+        pixelX = cameraX #Just because we set it up right
+        pixelY = cameraY 
+        pixelZ = 0
+
+        originX = 0
+        originY = 0
+        originZ = 1
+
+        sadDirectionX = pixelX - originX
+        sadDirectionY = pixelY - originY
+        sadDirectionZ = pixelZ - originZ
+
+        lengthSad = math.sqrt(sadDirectionX*sadDirectionX + sadDirectionY*sadDirectionY + sadDirectionZ * sadDirectionZ)
+
+        directionX = sadDirectionX / lengthSad
+        directionY = sadDirectionY / lengthSad
+        directionZ = sadDirectionZ / lengthSad
+
+        origin = Point3D(originX, originY, originZ)
+        direction = Point3D(directionX, directionY, directionZ)
+        center = Point3D(0,0,0)
+        radius = .5
+
+        e = origin.minus(center)
+        a = direction.dot(direction)
+        b = 2*direction.dot(e)
+        c = e.dot(e)-radius*radius
+
+        discriminant = b*b - 4 * a * c
+        if discriminant < 0:
+            frame.buffer[y*256*3] = 0
+            frame.buffer[y*256*3+1] = 0
+            frame.buffer[y*256*3+2] = 0
+
+
+
+
+
+
+
+
+
+
+
     
 for y in range(256):
     for x in range(256):
