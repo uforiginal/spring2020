@@ -3,8 +3,9 @@ import png
 import math
 
 from Frame import Frame
-from Ray import Ray
+from Vector import Vector
 from Point3D import Point3D
+from Ray import Ray
 from AreaLight import AreaLight
 from Camera import Camera
 from Color import Color
@@ -37,10 +38,11 @@ frame = Frame(256, 256)
 cameraOrigin = Point3D(0,0,1)
 origin = Point3D(0,0,0)
 cameraLookAt = origin
-cameraUp = Point3D(0,1,0)
-camreaBackgroundColor = Color(0,0,0)
+cameraUp = Vector(0,1,0)
+cameraBackgroundColor = Color(0,0,0)
+fov = 45 / 360 * math.pi * 2 # convert 45 degrees to radians. Should result in pi/4 ~= .785
 
-camera = Camera(cameraOrigin, cameraLookAt, cameraUp, camreaBackgroundColor)
+camera = Camera(cameraOrigin, cameraLookAt, cameraUp, fov, cameraBackgroundColor)
 
 lightDirection = Point3D(0,-1,0)
 lightColor = Color(255,255,255)
@@ -48,7 +50,7 @@ lightColor = Color(255,255,255)
 light = DirectionalLight(lightColor, 1, lightDirection)
 
 sphereCenter = origin
-sphereRadius = 1
+sphereRadius = .5
 sphereMaterialColor = Color(255, 0, 0)
 sphereMaterialSpecularColor = Color(255,255,255)
 sphereMaterialSpecularStrength = 1
@@ -72,6 +74,45 @@ objects = [sphere]
 #That's our hit
 #If we don't have a hit, return the background color
 #Then calculate the color based on the direction to the right
+
+for y in range(frame.height):
+    for x in range(frame.width):
+        #Convert from screen space to camera space
+        #Then from frame camera space to world space
+        yPercent = -1 * (y / frame.height * 2 - 1) #-1 because images have y down
+        xPercent = x / frame.width * 2 -1
+        #yPercent and xPercent are now in [-1,1]
+        #Now we multiply by the camera width and height at the lookAt point
+        #To do that we first get the distance from the camera origin and the camera destination
+        #This becomes the hyponetus for our triangle calculations
+
+        toLookAt = camera.lookAt.minus(camera.origin)
+        #toLookAt is a vector from the origin to the look at point.
+        #We need this to calculate the camera right vector
+
+        distance = toLookAt.length()
+        toLookAtNormalized = toLookAt.toNormalized()
+        width = math.cos(camera.fov) * distance
+        height = math.cos(camera.fov) * distance
+        #width and height should be the same unless we set different fovs for width and height
+        cameraRight = #???
+        rightWorld = cameraRight.toScaled(width * xPercent)
+        upWorld =  camera.up.toScaled(height * yPercent)
+        pixelLookAt = Point3D.fromVector(upWorld.plus(rightWorld))
+        #We now have our world look at points
+        #We need to generate our look at ray and NORMALIZE IT!!!
+        ray = Ray(camera.origin, pixelLookAt.minus(camera.origin).toNormalized())
+
+        for object in objects:
+            try:
+                t = object.intersect(ray)
+                if t >= 0:
+                    frame.set(x,y,255,255,255)
+                else:
+                    frame.set(x,y,255, 0, 0)
+            except:
+                frame.set(x,y, 0, 0,0)
+
 
 
     

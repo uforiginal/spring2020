@@ -8,3 +8,11 @@ class Frame:
                 self.buffer[h*width*3 + w*3] = 255
                 self.buffer[h*width*3 + w*3+1] = 128
                 self.buffer[h*width*3 + w*3+2] = 255
+
+    def set(self, x, y, r, g, b):
+        indexR = y * self.width*3 + x * 3 + 0
+        indexG = y * self.width*3 + x * 3 + 1
+        indexB = y * self.width*3 + x * 3 + 2
+        self.buffer[indexR] = r
+        self.buffer[indexG] = g
+        self.buffer[indexB] = b
