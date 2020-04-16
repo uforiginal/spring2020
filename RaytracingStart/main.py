@@ -8,9 +8,10 @@ from Frame import Frame
 
 
 print("Starting our ray tracer")
-
 frame = Frame(256, 256)
-
+directionalLightX = 0
+directionalLightY = -1
+directionalLightZ = 0
 
 
 
@@ -62,6 +63,64 @@ for y in range(256):
             frame.buffer[y*256*3] = 0
             frame.buffer[y*256*3+1] = 0
             frame.buffer[y*256*3+2] = 0
+        else :
+            
+
+        if t<0:
+            frame.buffer[y*256*3 + x*3] = 0
+            frame.buffer[y*256*3 + x*3+1] = 0
+            frame.buffer[y*256*3 + x*3+2] = 0
+        else:
+            ambient = 0
+            diffuse = 0
+            specular = 0
+
+            collisionX = directionX * t + originX
+            collisionY = directionY * t + originY
+            collisionZ = directionZ * t + originZ
+
+            uNNx = collisionX - center.x
+            uNNy = collisionY - center.y
+            uNNz = collisionZ - center.z
+
+            normalLength = math.sqrt(uNNx**2 + uNNy**2 + uNNz**2)
+            circleNormalx = uNNx/normalLength
+            circleNormaly = uNNy/normalLength
+            circleNormalz = uNNz/normalLength
+
+            toLightX = -directionalLightX
+            toLightY = -directionalLightY
+            toLightZ = -directionalLightZ
+
+            dotProduct = circleNormalx*toLightX + circleNormaly*toLightY + circleNormalz*toLightZ
+            if dotProduct < 0:
+                dotProduct = 0
+
+            diffuseR = 255 * dotProduct
+            diffuseG = 255 * dotProduct
+            diffuseB = 255 * dotProduct
+
+            cR = math.floor(ambient + diffuseR + specular)
+            cG = math.floor(ambient + diffuseG + specular)
+            cB = math.floor(ambient + diffuseB + specular)
+            if cR>255:
+                cR = 255
+            if cG>255:
+                cG = 255
+            if cB>255:
+                cB = 255
+
+            frame.buffer[y*256*3 + x*3] = c
+            frame.buffer[y*256*3 + x*3+1] = c
+            frame.buffer[y*256*3 + x*3+1] = c
+
+            #I need a normal
+            #I need the light direction
+            #I need the dot product
+
+
+
+
 
 
 
