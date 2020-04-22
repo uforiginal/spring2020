@@ -1,199 +1,251 @@
-#python -m pip install pypng
+""" 
+To run this program do the following:
+First, install the pip pacakages by running the following
+python -m pip install -r requirements.txt
+Then run this main file by running the following
+python main.py
+Note that this program is built to run in python 3
+If you machine defaults to running python 2 when you run python
+from your shell/command line, it won't work
+You may need to run
+python3 main.py to get the program to run
+Written by B. Ricks, @bricksphd, 
+Professor at unomaha.edu
+MIT License, 2020
+"""
+
+
 import png
 import math
-import Point3D
+import random
+from datetime import datetime
 
 from Frame import Frame
+from Vector import Vector
+from Point3D import Point3D
+from Ray import Ray
+from AreaLight import AreaLight
+from Camera import Camera
+from DirectionalLight import DirectionalLight
+from Light import Light
+from Material import Material
+from OrthographicCamera import OrthographicCamera
+from PerspectiveCamera import PerspectiveCamera
+from PointLight import PointLight
+from SceneObject import SceneObject
+from Sphere import Sphere
+from SpotLight import SpotLight
+
+#things I want to do:
+#add in another sphere that is also a light
+#change a sphere to an icosphere
+#generate a bunch of particles as lights
 
 
 
 print("Starting our ray tracer")
+start = datetime.now()
+
+# Grab the enivornment image
+background = png.Reader(filename="particles.png")
+
+# Grab the pixels in an array
+# It's sligthly tricky because color png images may be packid as 3-byte pixels or 4-byte pixels (w/transparency)
+# https://stackoverflow.com/questions/138250/how-to-read-the-rgb-value-of-a-given-pixel-in-python/50894365
+backgroundWidth, backgroundHeight, backgroundRows, backgroundMeta =  background.read_flat()
+backgroundPixelByteWidth = 4 if backgroundMeta['alpha'] else 3
+
+
+
+# Minimum for a ray tracer
+# A frame to render to
+# A camera
+# A light
+# An object to render
+
+
 frame = Frame(256, 256)
-directionalLightX = 0
-directionalLightY = -1
-directionalLightZ = 0
+
+cameraOrigin = Point3D(0, 0, 1)
+origin = Point3D(0, 0, 0)
+cameraLookAt = Point3D(0, 0, 0)
+cameraUp = Vector(0, 1, 0)
+cameraBackgroundColor = Vector(0, 0, 0)
+# convert 45 degrees to radians. Should result in pi/4 ~= .785
+fov = 45 / 360 * math.pi * 2
+raysPerPixel = 1
+focusPoint = 0
+
+camera = PerspectiveCamera(cameraOrigin, cameraLookAt, cameraUp,
+                           cameraBackgroundColor, raysPerPixel, focusPoint, fov)
+
+lightDirection = Vector(0, -1, 0)
+lightColor = Vector(255, 255, 255)
+
+light = DirectionalLight(lightColor, 1, lightDirection)
+light2 = DirectionalLight(Vector(0, 0, 255), 1, Vector(1, 0, 0))
+light3 = PointLight(Vector(255, 247, 222), .3, Point3D(.2, .2, .5))
+
+sphereCenter = Point3D(0,0,-.2)
+sphereRadius = .5
+sphereMaterialColor = Vector(255, 255, 255)
+sphere2MaterialColor = Vector(0,255,255)
+sphereMaterialSpecularColor = Vector(0, 255, 255)
+sphereMaterialSpecularStrength = .5
+
+sphereMaterial = Material(
+    sphere2MaterialColor, sphereMaterialSpecularColor, sphereMaterialSpecularStrength,.0)
+
+sphereMaterial2 = Material(
+    Vector(64, 64, 64), sphereMaterialSpecularColor, sphereMaterialSpecularStrength, .5)
+
+#sphereMaterial3 = Material(
+    #Vector(0, 255, 0), sphereMaterialSpecularColor, sphereMaterialSpecularStrength, 0)
+
+sphere = Sphere(sphereMaterial2, sphereCenter, sphereRadius)
+#sphere2 = Sphere(sphereMaterial, Point3D(.2, .2, .5), .1)
+#sphere3 = Sphere(sphereMaterial2, Point3D(-.2, -.1, .5), .1)
+#sphere4 = Sphere(sphereMaterial3, Point3D(0, -.1, .5), .1)
+
+lights = [light, light3]
+objects = [sphere]
+#objects = [sphere, sphere2, sphere3, sphere4]
+#Now loop over every pixel in our frame
+
+#For every pixel
+#Figure out where in camera space that pixel is
+#Then figure out where in world space that pixel is
+#Then shoot a ray from the world space origin of the camera to that world space location
+#Then loop over each object in the scene
+#For ever object that ray collides with
+#Find out which one has the closest collission
+#That's our hit
+#If we don't have a hit, return the background color
+#Then calculate the color based on the direction to the right
+
+# Ray - Ray we're sending out
+# orgin object - Object we don't want to self-intersect with
+def hitDistance(ray, originObject):
+    closestHit = float("inf")
+    closestObjectIndex = -1
+    for object in objects:
+        if object != originObject:
+            t = object.intersect(ray)
+            if t >= 0 and t < closestHit:
+                closestHit = t
+                closestObjectIndex = objects.index(object)
+    return [closestHit, closestObjectIndex]
+
+def getColor(ray, originObject, recursionLimit):
+    if recursionLimit <= 0:
+        return Vector(0,0,0)
+
+    [t, collisionObjectIndex] = hitDistance(ray, originObject)
+    if collisionObjectIndex != -1:
+        object = objects[collisionObjectIndex]
+        collisionPoint = Point3D.fromVector(ray.direction.toScaled(t).plus(camera.origin.vector))
+        normalDirection = collisionPoint.minus(object.center)
+        normal = normalDirection.toNormalized()
+
+        ambient = Vector(30, 30, 30)
+        diffuse = Vector(0,0,0)
+
+        for light in lights:
+            toLight = light.direction.toScaled(-1)
+            [t2, shadowObjectIndex] = hitDistance(Ray(collisionPoint, toLight), object)
+            if shadowObjectIndex == -1:
+                lightDiffuse = Vector(0,0,0)
+                product = toLight.dot(normal)
+                if product < 0:
+                    product = 0
+                lightDiffuse = light.color.toScaled(product)
+                lightDiffuse = lightDiffuse.simpleMultiply(object.material.diffuseColor)
+                lightDiffuse = lightDiffuse.toScaled(1/255)
+                diffuse = diffuse.plus(lightDiffuse)  
 
 
+            # Needs:
+            # Normal
+            # Incoming direction (ray.direction)
+            # Want reflective direction
+            reflectiveDirection = ray.direction.toScaled(-1).reflectAbout(normal)          
+            reflectionRay = Ray(collisionPoint, reflectiveDirection)
+            reflectionColor = getColor(reflectionRay, object, recursionLimit - 1)
 
-for y in range(256):
-    for x in range(256):
-        #Pattern to move between reference spaces
-        #1. Divide by maximum value
-        #2. Subract by .5 so I'm centered about 0
-        #3. Multiply by the biggest number * 2 in the new space
-        cameraX = x/255 #1.
-        cameraX = cameraX -.5 #2.
-        cameraX = cameraX * 2 #3.
+        color = ambient.plus(diffuse.toScaled(1 - object.material.reflectivity)).plus(reflectionColor.toScaled(object.material.reflectivity))                   
+        
+        return color
+    else:
+        return sampleBackground(ray.direction)
 
-        cameraY = y/255
-        cameraY = cameraY - .5
-        cameraY = cameraY * 2
-        cameraY = cameraY * -1 #Account for flipped Y
-
-        pixelX = cameraX #Just because we set it up right
-        pixelY = cameraY 
-        pixelZ = 0
-
-        originX = 0
-        originY = 0
-        originZ = 1
-
-        sadDirectionX = pixelX - originX
-        sadDirectionY = pixelY - originY
-        sadDirectionZ = pixelZ - originZ
-
-        lengthSad = math.sqrt(sadDirectionX*sadDirectionX + sadDirectionY*sadDirectionY + sadDirectionZ * sadDirectionZ)
-
-        directionX = sadDirectionX / lengthSad
-        directionY = sadDirectionY / lengthSad
-        directionZ = sadDirectionZ / lengthSad
-
-        origin = Point3D(originX, originY, originZ)
-        direction = Point3D(directionX, directionY, directionZ)
-        center = Point3D(0,0,0)
-        radius = .5
-
-        e = origin.minus(center)
-        a = direction.dot(direction)
-        b = 2*direction.dot(e)
-        c = e.dot(e)-radius*radius
-
-        discriminant = b*b - 4 * a * c
-        if discriminant < 0:
-            frame.buffer[y*256*3] = 0
-            frame.buffer[y*256*3+1] = 0
-            frame.buffer[y*256*3+2] = 0
-        else :
-            
-
-        if t<0:
-            frame.buffer[y*256*3 + x*3] = 0
-            frame.buffer[y*256*3 + x*3+1] = 0
-            frame.buffer[y*256*3 + x*3+2] = 0
-        else:
-            ambient = 0
-            diffuse = 0
-            specular = 0
-
-            collisionX = directionX * t + originX
-            collisionY = directionY * t + originY
-            collisionZ = directionZ * t + originZ
-
-            uNNx = collisionX - center.x
-            uNNy = collisionY - center.y
-            uNNz = collisionZ - center.z
-
-            normalLength = math.sqrt(uNNx**2 + uNNy**2 + uNNz**2)
-            circleNormalx = uNNx/normalLength
-            circleNormaly = uNNy/normalLength
-            circleNormalz = uNNz/normalLength
-
-            toLightX = -directionalLightX
-            toLightY = -directionalLightY
-            toLightZ = -directionalLightZ
-
-            dotProduct = circleNormalx*toLightX + circleNormaly*toLightY + circleNormalz*toLightZ
-            if dotProduct < 0:
-                dotProduct = 0
-
-            diffuseR = 255 * dotProduct
-            diffuseG = 255 * dotProduct
-            diffuseB = 255 * dotProduct
-
-            cR = math.floor(ambient + diffuseR + specular)
-            cG = math.floor(ambient + diffuseG + specular)
-            cB = math.floor(ambient + diffuseB + specular)
-            if cR>255:
-                cR = 255
-            if cG>255:
-                cG = 255
-            if cB>255:
-                cB = 255
-
-            frame.buffer[y*256*3 + x*3] = c
-            frame.buffer[y*256*3 + x*3+1] = c
-            frame.buffer[y*256*3 + x*3+1] = c
-
-            #I need a normal
-            #I need the light direction
-            #I need the dot product
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def sampleBackground(direction):
+   a1 = math.atan2(direction.z, direction.x)
+   b1 = math.atan2(-direction.y, direction.z)
+   a = (a1 + math.pi)/(2*math.pi)
+   b = (b1 + math.pi)/(2*math.pi)
+   i = math.floor(a*backgroundWidth)
+   j = math.floor(b*backgroundHeight)
+   pixelPosition = i + j * backgroundWidth
+   backgroundColor = backgroundRows[pixelPosition * backgroundPixelByteWidth:(pixelPosition+1)*backgroundPixelByteWidth]
+   return Vector(backgroundColor[0], backgroundColor[1], backgroundColor[2])
     
-for y in range(256):
-    for x in range(256):
-        #pattern to move between ref spaces
-        #1) divide by maximum value
-        #2) subtract by .5 so I am centered about 0
-        #3) multiply by the biggest number * 2 in the new space
-        cameraX = x/255 #1)
-        cameraX = cameraX - 0.5 #2)
-        cameraX = cameraX * 2 #3)
 
-        cameraY = y/255
-        cameraY = cameraY - 0.5
-        cameraY = cameraY *2
-        cameraY = cameraY * -1 #accounts for flipped Y
 
-        pixelX = cameraX
-        pixelY = cameraY
-        pixelZ = 0
+for y in range(frame.height):
+    for x in range(frame.width):
+        if x == 123 and y == 159:
+            print("debug")
+        #Convert from screen space to camera space
+        #Then from frame camera space to world space
+        yPercent = -1 * (y / frame.height * 2 - 1) #-1 because images have y down
+        xPercent = x / frame.width * 2 -1
+        #yPercent and xPercent are now in [-1,1]
+        #Now we multiply by the camera width and height at the lookAt point
+        #To do that we first get the distance from the camera origin and the camera destination
+        #This becomes the hyponetus for our triangle calculations
 
-        originX = 0
-        originY = 0
-        originZ = 1
+        toLookAt = camera.lookAt.minus(camera.origin)
+        #toLookAt is a vector from the origin to the look at point.
+        #We need this to calculate the camera right vector
 
-        #whenever we have a drection, we want a unit vector
-        # normalizing : the process of turning a vactor into a unit vector
-            #1) get length (length != 1)
-            #2) divide by length
-            #3) length = sqrt(x^2+y^2+z^2)
-            #4) (x/length, y/length, z/length)
+        distance = toLookAt.length()
+        toLookAtNormalized = toLookAt.toNormalized()
+        width = math.cos(camera.fov) * distance
+        height = math.cos(camera.fov) * distance
+        #width and height should be the same unless we set different fovs for width and height
 
-        sadDirectionX = pixelX - originX
-        sadDirectionY = pixelY - originY
-        sadDirectionZ = pixelZ - originZ
+        # TODO: This should be toLookAtNormalize
+        cameraRight = toLookAtNormalized.cross(camera.up)
+        rightWorld = cameraRight.toScaled(width * xPercent)
+        upWorld =  camera.up.toScaled(height * yPercent)
+        pixelLookAt = Point3D.fromVector(upWorld.plus(rightWorld))
+        #We now have our world look at points
+        #We need to generate our look at ray and NORMALIZE IT!!!
+        ray = Ray(camera.origin, pixelLookAt.minus(camera.origin).toNormalized())
 
-        lengthSad = math.sqrt((sadDirectionX*sadDirectionX) + (sadDirectionY*sadDirectionY) + (sadDirectionZ*sadDirectionZ))
-        directionX = sadDirectionX / lengthSad
-        directionY = sadDirectionY/ lengthSad
-        directionZ = sadDirectionZ/ lengthSad
+        # jitter the ray
 
-        #sphere definition: (x - centerx)^2 + (y - centery)^2 + (z - centerz)^2 = radius^2
-        #ray definition: (origin + direction(time))
-        #ray+sphere : (o + dt - c)^2 - r^2 = o
-        #if o <0 then we don't intersect the sphere, so we can just abandon it
+        r = 0
+        g = 0
+        b = 0
+        samples = 12
+        for i in range(samples):
+            ray2 = Ray(Point3D.fromVector(ray.origin.vector.clone()), ray.direction.clone())
+            ray2.direction.x += (random.random() - .5)*2*width/frame.width
+            ray2.direction.y += (random.random() - .5)*2*height/frame.height
+            ray2.direction = ray2.direction.toNormalized()
+            color = getColor(ray2, None, 4)
+            r += color.x
+            g += color.y
+            b += color.z
+        r /= samples
+        g /= samples
+        b /= samples
 
-        origin = Point3D(originX, originY, originZ)
-        direction = Point3D(directionX, directionY, directionZ)
-        center = Point3D(0,0,0)
-        radius = 0.5
 
-        e = origin.minus(center)
-        a = direction.dot(direction)
-        b = 2*direction.dot(e)
-        c = e.dot(e)-radius*radius
+        frame.set(x,y, Vector(r,g,b))
 
-        discriminant = b*b - 4 *a *c
-        if discriminant < 0:
-            frame.buffer[y*256*3] = 0
-            frame.buffer[y*256*3+2: int
-            frame.buffer[y*256*3 +2] = 0
-            
-
+        
 
 ##Write the buffer out to a file
 
@@ -210,3 +262,6 @@ w.write_array(f, frame.buffer)
 f.close()
 
 print("Finished rendering the file")
+end = datetime.now()
+
+print("Run time: " + str(end - start))

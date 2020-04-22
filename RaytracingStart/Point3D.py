@@ -1,19 +1,18 @@
+import math
+from Vector import Vector
+
+
 class Point3D:
+    """ A point in 3D space. Wraps a Vector."""
     def __init__(self, x:float, y:float, z:float):
-       self.x = x
-       self.y = y
-       self.z = z
+       self.vector = Vector(x,y,z)
 
-    def minus(self, point):
-        toReturn = Point3D(0,0,0)
-        toReturn.x = self.x - point.x
-        toReturn.y = self.y - point.y
-        toReturn.z = self.z - point.z
-        return toReturn
+    def fromVector(vector:Vector):
+        return Point3D(vector.x, vector.y, vector.z)
 
-    def dot(self, point):
-        x = self.x * point.x
-        y = self.y * point.y
-        z = self.z * point.z
-        return x + y + z
-    
+    def distance(self, other):
+        vectorDifference = self.minus(other)
+        return vectorDifference.length()
+
+    def minus(self, other):
+        return self.vector.minus(other.vector)
